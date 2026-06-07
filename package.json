@@ -2,8 +2,13 @@
   "name": "escola40-vscode",
   "displayName": "Escola 4.0",
   "description": "Recursos oficiales y componentes premium para la Escuela 4.0 con Edumark",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "gerardfp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gerardfp/escola40"
+  },
+  "license": "GPL-3.0-or-later",
   "engines": {
     "vscode": "^1.85.0"
   },
