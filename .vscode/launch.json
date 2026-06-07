@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--extensionDevelopmentPath=${workspaceFolder}/../edu2elpx",
+        "--extensionDevelopmentPath=${workspaceFolder}/../edumark/packages/vscode-extension",
+        "--extensionDevelopmentPath=${workspaceFolder}/../ataula/packages/vscode-extension-table"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js",
+        "${workspaceFolder}/../edu2elpx/dist/**/*.js",
+        "${workspaceFolder}/../edumark/packages/vscode-extension/dist/**/*.js",
+        "${workspaceFolder}/../ataula/packages/vscode-extension-table/dist/**/*.js"
+      ],
+      "preLaunchTask": "npm: compile"
+    }
+  ]
+}

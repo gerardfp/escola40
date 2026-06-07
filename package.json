@@ -1,0 +1,33 @@
+{
+  "name": "escola40-vscode",
+  "displayName": "Escola 4.0",
+  "description": "Recursos oficiales y componentes premium para la Escuela 4.0 con Edumark",
+  "version": "1.0.0",
+  "publisher": "gerardfp",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*",
+    "onLanguage:edumark",
+    "workspaceContains:**/*.edu"
+  ],
+  "main": "./dist/extension.js",
+  "extensionDependencies": [
+    "gerardfp.edu2elpx-vscode"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "npx esbuild ./src/extension.ts --bundle --platform=node --target=node18 --external:vscode --outfile=./dist/extension.js",
+    "watch": "npx esbuild ./src/extension.ts --bundle --platform=node --target=node18 --external:vscode --outfile=./dist/extension.js --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.19.11"
+  }
+}

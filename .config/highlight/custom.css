@@ -1,0 +1,167 @@
+num {
+    color: rgb(54, 80, 251);
+
+    title {
+        color: rgb(54, 80, 251);
+        font-weight: bold;
+    }
+}
+
+percnt {
+    color: rgba(231, 231, 0, 0.776);
+}
+
+num * {
+    color: rgb(92, 92, 92);
+}
+
+pagina {
+    color: #8bb2f6a2;
+
+    title {
+        color: rgb(12, 64, 113);
+        font-weight: bold;
+        background-color: rgb(109, 178, 215);
+    }
+}
+
+gt {
+    color: rgba(0, 128, 0, 0.674);
+    font-weight: bold;
+
+    title {
+        color: rgb(8, 178, 8);
+        font-weight: bold;
+    }
+}
+
+pagina {
+    color: rgb(187, 187, 187);
+
+    title {
+        color: white;
+        font-weight: bold;
+    }
+}
+
+item {
+    title {
+        color: rgba(231, 231, 0, 0.776);
+        font-weight: bold;
+    }
+}
+
+seccion {
+    color: #5590f0b1;
+
+    title {
+        color: rgb(8, 178, 8);
+        font-weight: bold;
+    }
+}
+
+sabiasque, didyouknow {
+    color: #8b5cf6;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+atencion, warning {
+    color: #f97316;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+sugerencia, hint {
+    color: #22c55e;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+solucion, solution {
+    color: #a855f7;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+reflexion, reflection {
+    color: #6366f1;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+actividad, activity {
+    color: #f43f5e;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+nota, note {
+    color: #64748b;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+pregunta, question {
+    color: #14b8a6;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+rubrica, rubric {
+    color: #ec4899;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+preguntate, ask_yourself {
+    color: magenta;
+
+    title {
+        color: magenta;
+    }
+}
+
+pestanas {
+    color: #d935d1;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+generic {
+    color: #d8d8d8;
+
+    title {
+        font-weight: bold;
+    }
+}
+
+imagen {
+    title {
+        color: rgb(239, 68, 68);
+        font-weight: bold;
+    }
+    params {
+        color: rgb(163, 163, 163);
+    }
+}
