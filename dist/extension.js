@@ -88,6 +88,44 @@ function syncDirectory(sourceDir, destDir, relPathBase, state) {
   }
   return changed;
 }
+function hasEduFileImmediately(dir) {
+  try {
+    if (!fs.existsSync(dir))
+      return false;
+    const items = fs.readdirSync(dir);
+    return items.some((item) => {
+      const itemPath = path.join(dir, item);
+      return fs.statSync(itemPath).isFile() && item.endsWith(".edu");
+    });
+  } catch {
+    return false;
+  }
+}
+function findProjectRoot(filePath) {
+  const fileUri = vscode.Uri.file(filePath);
+  const folder = vscode.workspace.getWorkspaceFolder(fileUri);
+  const workspaceRoot = folder ? folder.uri.fsPath : null;
+  const parentDir = path.dirname(filePath);
+  if (!workspaceRoot) {
+    return parentDir;
+  }
+  let current = parentDir;
+  let highestProjectRoot = parentDir;
+  while (true) {
+    if (hasEduFileImmediately(current)) {
+      highestProjectRoot = current;
+    }
+    if (current === workspaceRoot) {
+      break;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+  return highestProjectRoot;
+}
 function ensureProjectResources(workspaceDir, extensionPath) {
   try {
     const sourceConfig = path.join(extensionPath, ".config");
@@ -116,6 +154,38 @@ function ensureProjectResources(workspaceDir, extensionPath) {
       }
     }
     let updated = false;
+    let stateChanged = false;
+    const legacyCustomCss = path.join(workspaceDir, ".config", "highlight", "custom.css");
+    if (fs.existsSync(legacyCustomCss)) {
+      try {
+        fs.rmSync(legacyCustomCss, { force: true });
+        console.log(`[Escola 4.0] Archivo heredado custom.css eliminado: ${legacyCustomCss}`);
+      } catch (rmErr) {
+      }
+    }
+    if (state.files[".config/highlight/custom.css"]) {
+      delete state.files[".config/highlight/custom.css"];
+      stateChanged = true;
+    }
+    const redundantComponents = ["acordeon.js", "carrusel.js", "descarga.js", "imagen.js", "paginacion.js", "pestanas.js", "rubrica.js"];
+    for (const comp of redundantComponents) {
+      const compPath = path.join(workspaceDir, ".config", "components", comp);
+      if (fs.existsSync(compPath)) {
+        try {
+          fs.rmSync(compPath, { force: true });
+          console.log(`[Escola 4.0] Componente base redundante eliminado del workspace: ${compPath}`);
+        } catch (rmErr) {
+        }
+      }
+      const relPath = `.config/components/${comp}`;
+      if (state.files[relPath]) {
+        delete state.files[relPath];
+        stateChanged = true;
+      }
+    }
+    if (stateChanged) {
+      updated = true;
+    }
     if (fs.existsSync(sourceConfig)) {
       const destConfig = path.join(workspaceDir, ".config");
       const changed = syncDirectory(sourceConfig, destConfig, ".config", state);
@@ -138,44 +208,44 @@ function ensureProjectResources(workspaceDir, extensionPath) {
 }
 function activate(context) {
   console.log("La extensi\xF3n Escola 4.0 est\xE1 activa y monitoreando recursos del proyecto.");
-  const folders = vscode.workspace.workspaceFolders;
-  if (folders) {
-    for (const folder of folders) {
-      console.log(`[Escola 4.0] Comprobando recursos iniciales para workspace: ${folder.uri.fsPath}`);
-      ensureProjectResources(folder.uri.fsPath, context.extensionPath);
+  async function scanAndSyncWorkspace() {
+    const files = await vscode.workspace.findFiles("**/*.edu");
+    const projectRoots = /* @__PURE__ */ new Set();
+    for (const file of files) {
+      if (file.scheme === "file") {
+        const projRoot = findProjectRoot(file.fsPath);
+        if (projRoot) {
+          projectRoots.add(projRoot);
+        }
+      }
+    }
+    for (const root of projectRoots) {
+      console.log(`[Escola 4.0] Sincronizando recursos para ra\xEDz de proyecto encontrada: ${root}`);
+      ensureProjectResources(root, context.extensionPath);
     }
   }
+  scanAndSyncWorkspace();
   const activeEditor = vscode.window.activeTextEditor;
   if (activeEditor && (activeEditor.document.languageId === "edumark" || activeEditor.document.fileName.endsWith(".edu"))) {
-    const folder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
-    let workspaceDir = folder ? folder.uri.fsPath : void 0;
-    if (!workspaceDir && activeEditor.document.uri.scheme === "file") {
-      workspaceDir = path.dirname(activeEditor.document.uri.fsPath);
-    }
-    if (workspaceDir) {
-      console.log(`[Escola 4.0] Comprobando recursos iniciales para editor activo en startup: ${workspaceDir}`);
-      ensureProjectResources(workspaceDir, context.extensionPath);
+    if (activeEditor.document.uri.scheme === "file") {
+      const projRoot = findProjectRoot(activeEditor.document.uri.fsPath);
+      console.log(`[Escola 4.0] Comprobando recursos iniciales para editor activo en startup: ${projRoot}`);
+      ensureProjectResources(projRoot, context.extensionPath);
     }
   }
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders((event) => {
-      for (const folder of event.added) {
-        console.log(`[Escola 4.0] Comprobando recursos reactivos para nuevo workspace a\xF1adido: ${folder.uri.fsPath}`);
-        ensureProjectResources(folder.uri.fsPath, context.extensionPath);
-      }
+      console.log(`[Escola 4.0] Cambio en workspace folders. Resincronizando...`);
+      scanAndSyncWorkspace();
     })
   );
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor && (editor.document.languageId === "edumark" || editor.document.fileName.endsWith(".edu"))) {
-        const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-        let workspaceDir = folder ? folder.uri.fsPath : void 0;
-        if (!workspaceDir && editor.document.uri.scheme === "file") {
-          workspaceDir = path.dirname(editor.document.uri.fsPath);
-        }
-        if (workspaceDir) {
-          console.log(`[Escola 4.0] Comprobando recursos reactivos para cambio de editor enfocado: ${workspaceDir}`);
-          ensureProjectResources(workspaceDir, context.extensionPath);
+        if (editor.document.uri.scheme === "file") {
+          const projRoot = findProjectRoot(editor.document.uri.fsPath);
+          console.log(`[Escola 4.0] Comprobando recursos reactivos para cambio de editor enfocado: ${projRoot}`);
+          ensureProjectResources(projRoot, context.extensionPath);
         }
       }
     })
@@ -186,21 +256,12 @@ function activate(context) {
     const watchHandler = (eventType, filename) => {
       if (filename) {
         console.log(`[Escola 4.0] Cambios detectados en recurso de la extensi\xF3n: ${filename}. Resincronizando...`);
-        const activeFolders = vscode.workspace.workspaceFolders;
-        if (activeFolders) {
-          for (const folder of activeFolders) {
-            ensureProjectResources(folder.uri.fsPath, context.extensionPath);
-          }
-        }
+        scanAndSyncWorkspace();
         const editor = vscode.window.activeTextEditor;
         if (editor && (editor.document.languageId === "edumark" || editor.document.fileName.endsWith(".edu"))) {
-          const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
-          let workspaceDir = folder ? folder.uri.fsPath : void 0;
-          if (!workspaceDir && editor.document.uri.scheme === "file") {
-            workspaceDir = path.dirname(editor.document.uri.fsPath);
-          }
-          if (workspaceDir) {
-            ensureProjectResources(workspaceDir, context.extensionPath);
+          if (editor.document.uri.scheme === "file") {
+            const projRoot = findProjectRoot(editor.document.uri.fsPath);
+            ensureProjectResources(projRoot, context.extensionPath);
           }
         }
       }
@@ -226,36 +287,32 @@ function activate(context) {
   } catch (watchErr) {
     console.error("Error al iniciar el watcher de recursos de la extensi\xF3n:", watchErr);
   }
-  async function getWorkspaceComponents() {
+  async function getProjectComponents(projectRoot) {
     const components = /* @__PURE__ */ new Set();
-    const folders2 = vscode.workspace.workspaceFolders;
-    if (!folders2)
-      return [];
-    for (const folder of folders2) {
-      const paths = [
-        vscode.Uri.joinPath(folder.uri, ".config", "components"),
-        vscode.Uri.joinPath(folder.uri, "config", "components"),
-        vscode.Uri.joinPath(folder.uri, "components")
-      ];
-      for (const dirUri of paths) {
-        try {
-          if (dirUri.scheme === "file" && !fs.existsSync(dirUri.fsPath)) {
-            continue;
-          }
-          const files = await vscode.workspace.fs.readDirectory(dirUri);
-          for (const [name, type] of files) {
-            if (type === vscode.FileType.File && name.endsWith(".js")) {
-              let compName = name.slice(0, -3);
-              if (compName.startsWith("sym_")) {
-                compName = compName.slice(4);
-              }
-              if (compName !== "_aliases") {
-                components.add(compName);
-              }
+    const rootUri = vscode.Uri.file(projectRoot);
+    const paths = [
+      vscode.Uri.joinPath(rootUri, ".config", "components"),
+      vscode.Uri.joinPath(rootUri, "config", "components"),
+      vscode.Uri.joinPath(rootUri, "components")
+    ];
+    for (const dirUri of paths) {
+      try {
+        if (dirUri.scheme === "file" && !fs.existsSync(dirUri.fsPath)) {
+          continue;
+        }
+        const files = await vscode.workspace.fs.readDirectory(dirUri);
+        for (const [name, type] of files) {
+          if (type === vscode.FileType.File && name.endsWith(".js")) {
+            let compName = name.slice(0, -3);
+            if (compName.startsWith("sym_")) {
+              compName = compName.slice(4);
+            }
+            if (compName !== "_aliases") {
+              components.add(compName);
             }
           }
-        } catch (e) {
         }
+      } catch (e) {
       }
     }
     return Array.from(components);
@@ -284,6 +341,28 @@ function activate(context) {
       async provideCompletionItems(document, position, token, context2) {
         const lineText = document.lineAt(position.line).text;
         const textBeforeCursor = lineText.substring(0, position.character);
+        if (position.line === 0 && textBeforeCursor === "---") {
+          const metadataItem = new vscode.CompletionItem("--- plantilla de metadatos", vscode.CompletionItemKind.Snippet);
+          metadataItem.insertText = new vscode.SnippetString([
+            "---",
+            "titulo: ${1:T\xEDtulo}",
+            "subtitulo: ${2:Subt\xEDtulo}",
+            "idioma: ${3|Espa\xF1ol,Valenci\xE0,English|}",
+            "autoria: ${4:Nombre del Profesor o Autores}",
+            "licencia: ${5|Dominio P\xFAblico,Creative Commons BY-NC-SA,Creative Commons BY-SA|}",
+            "descripcion: ${6:Descripci\xF3n de la unidad}",
+            "etapa: ${7|Primaria,Secundaria,Bachillerato,F.P.|}",
+            "nivel: ${8:1\xBA ESO}",
+            "area: ${9:Tecnolog\xEDa / Digitalizaci\xF3n}",
+            "tipo: ${10|Desenchufada,Programaci\xF3n,Rob\xF3tica,Dise\xF1o 3D,IA|}",
+            "sesiones: ${11:4}",
+            "---",
+            "$0"
+          ].join("\n"));
+          metadataItem.range = new vscode.Range(new vscode.Position(0, 0), position);
+          metadataItem.documentation = new vscode.MarkdownString("Inserta la plantilla de metadatos (Frontmatter) oficial para Escola 4.0.");
+          return [metadataItem];
+        }
         const hashIndex = textBeforeCursor.lastIndexOf("#");
         const atIndex = textBeforeCursor.lastIndexOf("@");
         let triggerChar = "";
@@ -323,7 +402,8 @@ function activate(context) {
           }
         }
         try {
-          const scanned = await getWorkspaceComponents();
+          const projRoot = findProjectRoot(document.uri.fsPath);
+          const scanned = await getProjectComponents(projRoot);
           for (const name of scanned) {
             if (ESCOLA_WELL_KNOWN[name]) {
               continue;
@@ -348,7 +428,8 @@ function activate(context) {
       }
     },
     "#",
-    "@"
+    "@",
+    "-"
   );
   context.subscriptions.push(escolaCompletionProvider);
 }
