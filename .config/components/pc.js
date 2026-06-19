@@ -26,7 +26,7 @@ const DIMENSION_KEYS = [
     }
 ];
 
-module.exports = function(options, context) {
+module.exports = async function(options, context) {
     const metadata = context.metadata || {};
     const isCatalan = !!(metadata.idioma && /catal|valenci/i.test(metadata.idioma));
 
@@ -80,7 +80,7 @@ module.exports = function(options, context) {
     for (const dim of DIMENSION_KEYS) {
         const key = dim.key;
         const rawContent = dimensions[key].join('\n').trim();
-        const compiledHtml = rawContent ? context.compileMarkdown(rawContent) : '';
+        const compiledHtml = rawContent ? await context.compileMarkdown(rawContent) : '';
 
         rowsHtml += `
         <tr>

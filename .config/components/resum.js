@@ -1,4 +1,4 @@
-module.exports = function(options, context) {
+module.exports = async function(options, context) {
     const metadata = context.metadata || {};
 
     const titulo = metadata.titulo || metadata.title || 'No especificado';
@@ -63,10 +63,11 @@ module.exports = function(options, context) {
     `;
 
     // Markdown compiler helper that strips <p> tags for inline/single-line values
-    const compile = (val) => {
+    const compile = async (val) => {
         if (!val || val === 'No especificado') return val;
         if (typeof context.compileMarkdown === 'function') {
-            let html = context.compileMarkdown(val).trim();
+            let html = await context.compileMarkdown(val);
+            html = html.trim();
             // Strip surrounding <p> and </p> if it is a single paragraph to keep inline look clean in tables
             if (html.startsWith('<p>') && html.endsWith('</p>')) {
                 const inner = html.substring(3, html.length - 4);
@@ -79,12 +80,12 @@ module.exports = function(options, context) {
         return val;
     };
 
-    const tituloHtml = compile(titulo);
-    const materiaHtml = compile(materia);
-    const nivelHtml = compile(nivel);
-    const sesionesHtml = compile(sesiones.toString().includes('sesiones') ? sesiones : `${sesiones} sesiones`);
-    const descHtml = compile(descripcion);
-    const contextHtml = compile(contextoVal);
+    const tituloHtml = await compile(titulo);
+    const materiaHtml = await compile(materia);
+    const nivelHtml = await compile(nivel);
+    const sesionesHtml = await compile(sesiones.toString().includes('sesiones') ? sesiones : `${sesiones} sesiones`);
+    const descHtml = await compile(descripcion);
+    const contextHtml = await compile(contextoVal);
 
     return `
         <div style="${cardStyle}">
