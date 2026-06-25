@@ -965,3 +965,9 @@ h1.box-title::before {
     color: var(--e4-darkblue);
     text-decoration: none;
 }
+
+
+.box-content figcaption a {
+    color: var(--e4-darkblue);
+    font-weight: normal;
+}
